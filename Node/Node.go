@@ -19,7 +19,7 @@ type Info struct {
 	ObjectPresent bool           `json:"objectPresent"`
 	Object        *Models.Object `json:"object"`
 	Parent        string         `json:"parent"`
-	Next          *string        `json:"next"`
+	Next          string         `json:"next"`
 }
 
 // Create is used a constructor that instantiates a new node using it's initial knowledge.
@@ -66,7 +66,7 @@ func (i *Info) AcquireObject() {
 			Intent: constants.IntentRequestObject,
 		}
 		if err := i.sendMsg(msg, i.Parent); err != nil {
-			fmt.Printf("Error requestion object: %v\n", err)
+			fmt.Printf("Error requesting object: %v\n", err)
 		}
 		i.Parent = i.Port
 	}
@@ -74,17 +74,17 @@ func (i *Info) AcquireObject() {
 
 func (i *Info) ReleaseObject() {
 	i.Interested = false
-	if i.Next != nil {
+	if i.Next != "" {
 		msg := Models.Message{
 			Source: i.Port,
 			Intent: constants.IntentSendObject,
 			Object: i.Object,
 		}
-		if err := i.sendMsg(msg, *i.Next); err != nil {
+		if err := i.sendMsg(msg, i.Next); err != nil {
 			fmt.Printf("Error sending object after release: %v\n", err)
 		}
 		i.ObjectPresent = false
-		i.Next = nil
+		i.Next = ""
 	}
 }
 
@@ -98,6 +98,8 @@ func (i *Info) request(reqSource string) {
 			fmt.Printf("Error passing on request: %v\n", err)
 		}
 	} else if i.Interested {
+		i.Next = reqSource
+	} else {
 		msg := Models.Message{
 			Source: i.Port,
 			Intent: constants.IntentSendObject,
@@ -114,9 +116,6 @@ func (i *Info) request(reqSource string) {
 func (i *Info) receiveObject(object *Models.Object) {
 	i.Object = object
 	i.ObjectPresent = true
-
-	// Simulation an amount of time that a task involving the object might take
-	time.Sleep(time.Millisecond)
 }
 
 // SendMsg handles sending messages across the distributed system using a destination.

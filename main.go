@@ -21,15 +21,17 @@ func main() {
 	runExample(ip)
 }
 
-func logSystemTraffic(n1, n2, n3 *Node.Info) {
+func logSystemTraffic(n1, n2, n3, n4, n5 *Node.Info) {
 	if n1.ObjectPresent {
 		fmt.Printf("Object at Node %s\n", n1.Port)
 	} else if n2.ObjectPresent {
 		fmt.Printf("Object at Node %s\n", n2.Port)
 	} else if n3.ObjectPresent {
 		fmt.Printf("Object at Node %s\n", n3.Port)
-	} else {
-		fmt.Printf("Object being processed... \n")
+	} else if n4.ObjectPresent {
+		fmt.Printf("Object at Node %s\n", n2.Port)
+	} else if n5.ObjectPresent {
+		fmt.Printf("Object at Node %s\n", n3.Port)
 	}
 
 	for i := 0; i < 10; i++ {
@@ -39,6 +41,10 @@ func logSystemTraffic(n1, n2, n3 *Node.Info) {
 		} else if n2.ObjectPresent {
 			fmt.Printf("Object at Node %s\n", n2.Port)
 		} else if n3.ObjectPresent {
+			fmt.Printf("Object at Node %s\n", n3.Port)
+		} else if n4.ObjectPresent {
+			fmt.Printf("Object at Node %s\n", n2.Port)
+		} else if n5.ObjectPresent {
 			fmt.Printf("Object at Node %s\n", n3.Port)
 		}
 	}
@@ -58,7 +64,22 @@ func runExample(ip string) {
 	go n5.ListenOnPort()
 	time.Sleep(time.Millisecond)
 
-	go logSystemTraffic(n1, n2, n3)
+	go logSystemTraffic(n1, n2, n3, n4, n5)
+
+	go n2.AcquireObject()
+	time.Sleep(time.Millisecond)
+	go n3.AcquireObject()
+	time.Sleep(time.Millisecond)
+	go n4.AcquireObject()
+	time.Sleep(time.Millisecond)
+	go n2.ReleaseObject()
+	time.Sleep(time.Millisecond)
+	go n2.AcquireObject()
 
 	time.Sleep(time.Second)
+	fmt.Printf("{ Node %s, Parent: %s, Next: %s }\n", n1.Port, n1.Parent, n1.Next)
+	fmt.Printf("{ Node %s, Parent: %s, Next: %s }\n", n2.Port, n2.Parent, n2.Next)
+	fmt.Printf("{ Node %s, Parent: %s, Next: %s }\n", n3.Port, n3.Parent, n3.Next)
+	fmt.Printf("{ Node %s, Parent: %s, Next: %s }\n", n4.Port, n4.Parent, n4.Next)
+	fmt.Printf("{ Node %s, Parent: %s, Next: %s }\n", n5.Port, n5.Parent, n5.Next)
 }
