@@ -7,29 +7,30 @@ import (
 	"net"
 	"time"
 
-	"github.com/evscott/Distributed-NACN/Models"
-	"github.com/evscott/Distributed-NACN/constants"
+	"github.com/evscott/Distributed-ANA/Models"
+	"github.com/evscott/Distributed-ANA/constants"
 )
 
 type Info struct {
 	IP            string         `json:"IP"`
 	Port          string         `json:"port"`
-	Nodes         []string       `json:"nodes"`
 	RequestBy     map[string]int `json:"requestBy"`
 	Interested    bool           `json:"interested"`
 	ObjectPresent bool           `json:"objectPresent"`
-	Object        *Models.Object   `json:"Object"`
+	Object        *Models.Object `json:"object"`
+	Parent        string         `json:"parent"`
+	Next          *string        `json:"next"`
 }
 
 // Create is used a constructor that instantiates a new node using it's initial knowledge.
 //
 // A node must be created with initial knowledge of it's network IP, ID, and the IDs of it's neighbors.
-func Create(ip, port string, nodes []string) *Info {
+func Create(ip, port, parent string) *Info {
 	rand.Seed(time.Now().UTC().UnixNano())
 	newNode := Info{
-		IP:   ip,
-		Port: port,
-		Nodes: nodes,
+		IP:     ip,
+		Port:   port,
+		Parent: parent,
 	}
 	newNode.RequestBy = make(map[string]int)
 
@@ -39,35 +40,75 @@ func Create(ip, port string, nodes []string) *Info {
 // Create is used a constructor that instantiates a new node using it's initial knowledge.
 //
 // A node must be created with initial knowledge of it's network IP, ID, and the IDs of it's neighbors.
-func CreateWithObject(ip, port string, nodes []string) *Info {
+func CreateWithObject(ip, port, parent string) *Info {
 	rand.Seed(time.Now().UTC().UnixNano())
 	// Initialize object with empty map
 	object := &Models.Object{}
 	object.Obtained = make(map[string]int)
 
 	newNode := Info{
-		IP:   ip,
-		Port: port,
-		Nodes: nodes,
-		Object: object,
+		IP:            ip,
+		Port:          port,
+		Object:        object,
 		ObjectPresent: true,
+		Parent:        parent,
 	}
 	newNode.RequestBy = make(map[string]int)
 
 	return &newNode
 }
 
-
 func (i *Info) AcquireObject() {
-
+	i.Interested = true
+	if !i.ObjectPresent {
+		msg := Models.Message{
+			Source: i.Port,
+			Intent: constants.IntentRequestObject,
+		}
+		if err := i.sendMsg(msg, i.Parent); err != nil {
+			fmt.Printf("Error requestion object: %v\n", err)
+		}
+		i.Parent = i.Port
+	}
 }
 
 func (i *Info) ReleaseObject() {
-
+	i.Interested = false
+	if i.Next != nil {
+		msg := Models.Message{
+			Source: i.Port,
+			Intent: constants.IntentSendObject,
+			Object: i.Object,
+		}
+		if err := i.sendMsg(msg, *i.Next); err != nil {
+			fmt.Printf("Error sending object after release: %v\n", err)
+		}
+		i.ObjectPresent = false
+		i.Next = nil
+	}
 }
 
 func (i *Info) request(reqSource string) {
-
+	if i.Parent != i.Port {
+		msg := Models.Message{
+			Source: reqSource,
+			Intent: constants.IntentRequestObject,
+		}
+		if err := i.sendMsg(msg, i.Parent); err != nil {
+			fmt.Printf("Error passing on request: %v\n", err)
+		}
+	} else if i.Interested {
+		msg := Models.Message{
+			Source: i.Port,
+			Intent: constants.IntentSendObject,
+			Object: i.Object,
+		}
+		if err := i.sendMsg(msg, reqSource); err != nil {
+			fmt.Printf("Error sending object to requester: %v\n", err)
+		}
+		i.ObjectPresent = false
+	}
+	i.Parent = reqSource
 }
 
 func (i *Info) receiveObject(object *Models.Object) {

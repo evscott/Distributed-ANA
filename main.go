@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/evscott/Distributed-NACN/Node"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/evscott/Distributed-ANA/Node"
 )
 
 // main is the entry point for this distributed system.
@@ -44,23 +45,20 @@ func logSystemTraffic(n1, n2, n3 *Node.Info) {
 }
 
 func runExample(ip string) {
-	nodes := []string{"8001", "8002", "8003"}
-
 	// Create & start nodes with initial knowledge
-	n1 := Node.Create(ip, "8001", nodes)
-	n2 := Node.CreateWithObject(ip, "8002", nodes)
-	n3 := Node.Create(ip, "8003", nodes)
+	n1 := Node.CreateWithObject(ip, "8001", "8001")
+	n2 := Node.Create(ip, "8002", "8001")
+	n3 := Node.Create(ip, "8003", "8001")
+	n4 := Node.Create(ip, "8004", "8001")
+	n5 := Node.Create(ip, "8005", "8001")
 	go n1.ListenOnPort()
 	go n2.ListenOnPort()
 	go n3.ListenOnPort()
+	go n4.ListenOnPort()
+	go n5.ListenOnPort()
 	time.Sleep(time.Millisecond)
 
 	go logSystemTraffic(n1, n2, n3)
 
-	n1.AcquireObject()
-	time.Sleep(time.Millisecond)
-	n3.AcquireObject()
-	time.Sleep(time.Millisecond)
-	n1.ReleaseObject()
 	time.Sleep(time.Second)
 }

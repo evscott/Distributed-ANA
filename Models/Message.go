@@ -1,7 +1,7 @@
 package Models
 
 import (
-	"github.com/evscott/Distributed-NACN/constants"
+	"github.com/evscott/Distributed-ANA/constants"
 )
 
 // Pair representing a pair of node ID's, I and J.
@@ -16,7 +16,7 @@ type Object struct {
 type Message struct {
 	Source string           `json:"source"`
 	Intent constants.Intent `json:"intent"`
-	Object *Object           `json:"object"`
+	Object *Object          `json:"object"`
 }
 
 // Just for pretty printing Request/Response info.
